@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Terminal</title>
+  <link rel="stylesheet" href="https://unpkg.com/xterm@5.3.0/css/xterm.css">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #000;
+      color: #00ff44;
+      font-family: monospace;
+      overflow: hidden;
+      height: 100vh;
+      width: 100vw;
+      user-select: none;
+    }
+
+    #status-bar {
+      height: 32px;
+      background: #001500;
+      border-bottom: 1px solid #004400;
+      display: flex;
+      align-items: center;
+      padding: 0 20px;
+      font-size: 14px;
+      letter-spacing: 0.03em;
+      gap: 10px;
+    }
+
+    #status-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: #ff3333;
+      flex-shrink: 0;
+      transition: background 0.3s;
+    }
+    #status-dot.connected { background: #00ff44; box-shadow: 0 0 6px #00ff44; }
+    #status-dot.reconnecting { background: #ffcc00; }
+
+    #status-text { color: #aaffaa; font-size: 13px; }
+
+    #status-bar .right {
+      margin-left: auto;
+      opacity: 0.4;
+      font-size: 12px;
+      letter-spacing: 0.05em;
+    }
+
+    #terminal-container {
+      height: calc(100vh - 32px);
+      width: 100vw;
+      padding: 4px;
+    }
+
+    /* Overlay input to capture virtual keyboard on TV */
+    #kb-input {
+      position: fixed;
+      bottom: 0; left: 0;
+      width: 1px; height: 1px;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    /* Connection overlay shown when disconnected */
+    #overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.85);
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 16px;
+      z-index: 100;
+    }
+    #overlay.visible { display: flex; }
+    #overlay h2 { color: #ffcc00; font-size: 22px; letter-spacing: 0.1em; }
+    #overlay p  { color: #aaaaaa; font-size: 14px; text-align: center; max-width: 500px; line-height: 1.6; }
+    #retry-btn {
+      margin-top: 8px;
+      padding: 10px 28px;
+      background: #003300;
+      border: 1px solid #00aa44;
+      color: #00ff44;
+      font-size: 16px;
+      cursor: pointer;
+      letter-spacing: 0.08em;
+    }
+    #retry-btn:focus, #retry-btn:hover {
+      background: #005500;
+      outline: 2px solid #00ff44;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="status-bar">
+    <div id="status-dot"></div>
+    <span id="status-text">Connecting to shell service…</span>
+    <span class="right">webOS Terminal &nbsp;|&nbsp; com.swapnil.lgterminal</span>
+  </div>
+
+  <div id="terminal-container"></div>
+
+  <!-- Hidden input used to trigger the TV on-screen keyboard -->
+  <input id="kb-input" type="text" autocomplete="off" autocorrect="off" spellcheck="false">
+
+  <div id="overlay">
+    <h2>&#9679; SERVICE NOT RUNNING</h2>
+    <p>
+      The background shell service is not reachable on <code>ws://127.0.0.1:9001</code>.<br>
+      Make sure the app was installed correctly with <code>ares-install</code> and the service is registered.
+    </p>
+    <button id="retry-btn" autofocus>RETRY CONNECTION</button>
+  </div>
+
+  <script src="https://unpkg.com/xterm@5.3.0/lib/xterm.js"></script>
+  <script src="https://unpkg.com/xterm-addon-fit@0.8.0/lib/xterm-addon-fit.js"></script>
+  <script>
+    // ── Terminal setup ────────────────────────────────────────────────────────
+    const term = new Terminal({
+      fontSize: 18,
+      fontFamily: '"Cascadia Code", "Source Code Pro", "Courier New", monospace',
+      cursorBlink: true,
+      cursorStyle: 'block',
+      scrollback: 3000,
+      allowProposedApi: true,
+      theme: {
+        background:     '#000000',
+        foreground:     '#d0ffd0',
+        cursor:         '#00ff44',
+        cursorAccent:   '#000000',
+        selectionBackground: 'rgba(0,255,68,0.25)',
+        black:          '#000000',
+        red:            '#ff4444',
+        green:          '#00dd44',
+        yellow:         '#ffdd00',
+        blue:           '#4488ff',
+        magenta:        '#ff44ff',
+        cyan:           '#00ffcc',
+        white:          '#cccccc',
+        brightBlack:    '#555555',
+        brightRed:      '#ff6666',
+        brightGreen:    '#66ff88',
+        brightYellow:   '#ffee55',
+        brightBlue:     '#66aaff',
+        brightMagenta:  '#ff66ff',
+        brightCyan:     '#66ffdd',
+        brightWhite:    '#ffffff',
+      }
+    });
+
+    const fitAddon = new FitAddon.FitAddon();
+    term.loadAddon(fitAddon);
+    term.open(document.getElementById('terminal-container'));
+    fitAddon.fit();
+    window.addEventListener('resize', () => fitAddon.fit());
+
+    // ── WebSocket connection ──────────────────────────────────────────────────
+    const WS_URL   = 'ws://127.0.0.1:9001';
+    const MAX_TRIES = 10;    // show overlay after this many failed attempts
+    let ws         = null;
+    let tryCount   = 0;
+    let retryTimer = null;
+
+    const dot      = document.getElementById('status-dot');
+    const statusTx = document.getElementById('status-text');
+    const overlay  = document.getElementById('overlay');
+
+    function setStatus(state, text) {
+      dot.className    = state;          // '', 'connected', 'reconnecting'
+      statusTx.textContent = text;
+    }
+
+    function connect() {
+      clearTimeout(retryTimer);
+      ws = new WebSocket(WS_URL);
+
+      ws.onopen = () => {
+        tryCount = 0;
+        overlay.classList.remove('visible');
+        setStatus('connected', 'Connected  —  /bin/sh');
+        term.focus();
+      };
+
+      ws.onmessage = (e) => term.write(e.data);
+
+      ws.onclose = () => {
+        tryCount++;
+        if (tryCount >= MAX_TRIES) {
+          setStatus('', 'Service unreachable');
+          overlay.classList.add('visible');
+          document.getElementById('retry-btn').focus();
+        } else {
+          setStatus('reconnecting', `Reconnecting… (${tryCount}/${MAX_TRIES})`);
+          retryTimer = setTimeout(connect, 2000);
+        }
+      };
+
+      ws.onerror = () => ws.close();
+    }
+
+    document.getElementById('retry-btn').addEventListener('click', () => {
+      tryCount = 0;
+      overlay.classList.remove('visible');
+      connect();
+    });
+
+    // ── Terminal → WebSocket ──────────────────────────────────────────────────
+    term.onData((data) => {
+      if (ws && ws.readyState === WebSocket.OPEN) ws.send(data);
+    });
+
+    // ── TV remote / keyboard helpers ─────────────────────────────────────────
+    // LG Magic Remote OK button = Enter; directional keys map to terminal keys
+    const keyMap = {
+      ArrowUp:    '\x1b[A',
+      ArrowDown:  '\x1b[B',
+      ArrowRight: '\x1b[C',
+      ArrowLeft:  '\x1b[D',
+      Home:       '\x1b[H',
+      End:        '\x1b[F',
+      Delete:     '\x1b[3~',
+      PageUp:     '\x1b[5~',
+      PageDown:   '\x1b[6~',
+    };
+
+    document.addEventListener('keydown', (e) => {
+      if (overlay.classList.contains('visible')) return;
+      const mapped = keyMap[e.key];
+      if (mapped) {
+        e.preventDefault();
+        if (ws && ws.readyState === WebSocket.OPEN) ws.send(mapped);
+      }
+    });
+
+    // ── Start ─────────────────────────────────────────────────────────────────
+    connect();
+  </script>
+</body>
+</html>

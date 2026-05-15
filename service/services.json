@@ -1,0 +1,7 @@
+{
+  "id": "com.swapnil.lgterminal.service",
+  "description": "webOS Terminal — local shell over WebSocket",
+  "activityManager": "immediate",
+  "engine": "node",
+  "executable": "index.js"
+}

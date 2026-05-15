@@ -1,0 +1,13 @@
+{
+  "id": "com.swapnil.lgterminal",
+  "version": "1.0.0",
+  "vendor": "Swapnil",
+  "type": "web",
+  "main": "index.html",
+  "title": "Terminal",
+  "icon": "icon.png",
+  "largeIcon": "icon.png",
+  "iconColor": "",
+  "transparent": false,
+  "requiredMemory": 20
+}
