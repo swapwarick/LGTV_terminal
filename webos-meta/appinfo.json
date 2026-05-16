@@ -1,0 +1,15 @@
+{
+  "id": "com.swapnil.terminal",
+  "version": "1.0.0",
+  "vendor": "Swapnil",
+  "type": "web",
+  "main": "index.html",
+  "title": "Terminal",
+  "icon": "icon.png",
+  "largeIcon": "largeIcon.png",
+  "iconColor": "transparent",
+  "transparent": false,
+  "splashBackground": "#000000",
+  "requiredMemory": 64,
+  "resolution": "1920x1080"
+}

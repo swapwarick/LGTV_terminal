@@ -1,0 +1,32 @@
+{
+  "name": "lg-terminal",
+  "version": "1.0.0",
+  "description": "Remote bash terminal for LG webOS TV — LG Content Store app",
+  "private": true,
+  "scripts": {
+    "serve": "enact serve",
+    "pack": "enact pack",
+    "pack-p": "enact pack -p",
+    "test": "enact test",
+    "lint": "enact lint"
+  },
+  "enact": {
+    "theme": "moonstone",
+    "isomorphic": false
+  },
+  "dependencies": {
+    "@enact/core": "^4.9.4",
+    "@enact/i18n": "^4.9.4",
+    "@enact/moonstone": "^4.9.4",
+    "@enact/spotlight": "^4.9.4",
+    "@enact/ui": "^4.9.4",
+    "@enact/webos": "^4.9.4",
+    "react": "^17.0.2",
+    "react-dom": "^17.0.2",
+    "xterm": "^5.3.0",
+    "xterm-addon-fit": "^0.8.0"
+  },
+  "devDependencies": {
+    "@enact/cli": "^6.1.6"
+  }
+}

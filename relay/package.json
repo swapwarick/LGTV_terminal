@@ -1,0 +1,16 @@
+{
+  "name": "lg-terminal-relay",
+  "version": "1.0.0",
+  "description": "WebSocket-to-PTY relay — run this on your Mac or Linux",
+  "main": "relay.js",
+  "scripts": {
+    "start": "node relay.js"
+  },
+  "dependencies": {
+    "node-pty": "^1.0.0",
+    "ws": "^8.17.0"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}

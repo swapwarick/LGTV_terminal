@@ -1,0 +1,114 @@
+.root {
+	display: flex;
+	flex-direction: column;
+	height: 100vh;
+	background: #0a0a0a;
+	color: #d0ffd0;
+}
+
+.header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 36px 60px 24px;
+	border-bottom: 1px solid #1a2a1a;
+	flex-shrink: 0;
+}
+
+.headerLeft {
+	display: flex;
+	align-items: center;
+	gap: 20px;
+}
+
+.logo {
+	font-size: 48px;
+	font-family: "Courier New", monospace;
+	color: #00ff44;
+	font-weight: bold;
+	text-shadow: 0 0 20px rgba(0, 255, 68, 0.5);
+	line-height: 1;
+}
+
+.title {
+	color: #ffffff !important;
+	margin: 0 !important;
+}
+
+.subtitle {
+	color: #666 !important;
+	margin: 4px 0 0 !important;
+}
+
+.addBtn {
+	flex-shrink: 0;
+}
+
+.scroller {
+	flex: 1;
+	padding: 32px 60px;
+}
+
+.grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
+	gap: 20px;
+}
+
+.card {
+	background: #0f1a0f;
+	border: 1px solid #1e3a1e;
+	border-radius: 8px;
+	overflow: hidden;
+	transition: border-color 0.2s, box-shadow 0.2s;
+
+	&:focus-within {
+		border-color: #00ff44;
+		box-shadow: 0 0 0 2px rgba(0, 255, 68, 0.2);
+	}
+}
+
+.cardItem {
+	padding: 20px 24px !important;
+}
+
+.cardActions {
+	display: flex;
+	justify-content: flex-end;
+	padding: 0 12px 12px;
+	gap: 4px;
+	border-top: 1px solid #1e3a1e;
+	margin-top: -4px;
+}
+
+.empty {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 16px;
+	padding: 80px 0;
+}
+
+.emptyIcon {
+	font-size: 72px;
+	font-family: "Courier New", monospace;
+	color: #1e3a1e;
+	font-weight: bold;
+}
+
+.footer {
+	padding: 16px 60px;
+	border-top: 1px solid #1a2a1a;
+	flex-shrink: 0;
+}
+
+.footerText {
+	color: #444 !important;
+	font-size: 0.85em;
+
+	code {
+		color: #00aa44;
+		font-family: "Courier New", monospace;
+	}
+}
