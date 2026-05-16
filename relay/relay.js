@@ -1,11 +1,13 @@
 /**
  * relay.js — WebSocket-to-PTY relay server
- * Run this on your Mac or Linux, then connect from the LG TV app.
+ * Run this on Windows, Mac, or Linux — then connect from the LG TV app.
  *
  * Usage:
- *   node relay.js                   # listens on port 7681, all interfaces
- *   PORT=9000 node relay.js         # custom port
- *   SHELL=/usr/bin/zsh node relay.js  # custom shell
+ *   node relay.js                        # auto-detects OS shell, port 7681
+ *   PORT=9000 node relay.js              # custom port
+ *   SHELL=cmd.exe node relay.js          # force CMD on Windows
+ *   SHELL=powershell.exe node relay.js   # force PowerShell on Windows
+ *   SHELL=/usr/bin/zsh node relay.js     # force zsh on Mac/Linux
  */
 
 'use strict';
@@ -14,9 +16,19 @@ const WebSocket = require('ws');
 const pty       = require('node-pty');
 const os        = require('os');
 
-const PORT      = parseInt(process.env.PORT  || '7681', 10);
-const SHELL     = process.env.SHELL || (os.platform() === 'darwin' ? '/bin/zsh' : '/bin/bash');
-const HOST      = process.env.HOST  || '0.0.0.0';
+const IS_WIN = os.platform() === 'win32';
+
+// Shell auto-detection: Windows → PowerShell, macOS → zsh, Linux → bash
+function defaultShell () {
+	if (process.env.SHELL) return process.env.SHELL;
+	if (IS_WIN) return 'powershell.exe';
+	if (os.platform() === 'darwin') return '/bin/zsh';
+	return '/bin/bash';
+}
+
+const PORT  = parseInt(process.env.PORT || '7681', 10);
+const SHELL = defaultShell();
+const HOST  = process.env.HOST || '0.0.0.0';
 
 const wss = new WebSocket.Server({host: HOST, port: PORT});
 
@@ -26,8 +38,15 @@ wss.on('listening', () => {
 		.filter(i => i.family === 'IPv4' && !i.internal)
 		.map(i => `  ws://${i.address}:${PORT}`);
 
+	const shellLabel =
+		SHELL === 'powershell.exe' ? 'PowerShell' :
+		SHELL === 'cmd.exe'        ? 'CMD' :
+		SHELL.includes('zsh')      ? 'zsh' :
+		SHELL.includes('bash')     ? 'bash' : SHELL;
+
 	console.log('\n  LG Terminal Relay Server\n');
-	console.log(`  Shell : ${SHELL}`);
+	console.log(`  OS    : ${os.platform()} (${os.release()})`);
+	console.log(`  Shell : ${shellLabel}  (${SHELL})`);
 	console.log(`  Port  : ${PORT}`);
 	console.log('\n  Local addresses (enter one of these in the TV app):\n');
 	ifaces.forEach(a => console.log(a));
@@ -39,13 +58,13 @@ wss.on('connection', (ws, req) => {
 	const clientIp = req.socket.remoteAddress;
 	console.log(`[+] TV connected from ${clientIp}`);
 
-	// Spawn a real PTY — supports vim, top, nano, etc.
+	// Spawn a real PTY — vim/top/nano on Unix; Get-*, dir, etc. on Windows
 	const shell = pty.spawn(SHELL, [], {
-		name: 'xterm-256color',
-		cols:  220,
-		rows:  50,
-		cwd:   process.env.HOME || os.homedir(),
-		env:   process.env,
+		name: IS_WIN ? 'windows-ansi' : 'xterm-256color',
+		cols: 220,
+		rows: 50,
+		cwd:  process.env.HOME || process.env.USERPROFILE || os.homedir(),
+		env:  process.env,
 	});
 
 	// PTY output → TV

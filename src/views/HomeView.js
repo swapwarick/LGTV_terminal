@@ -85,7 +85,7 @@ const HomeView = ({onConnect, onAdd, onEdit}) => {
 			{/* ── Footer ── */}
 			<div className={css.footer}>
 				<BodyText className={css.footerText}>
-					Run the relay server on your Mac/Linux:&nbsp;
+					Run the relay on your PC, Mac, or Linux:&nbsp;
 					<code>node relay.js</code>
 				</BodyText>
 			</div>
